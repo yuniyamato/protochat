@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prototype Chat</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="catlogo.png" type="image/png" />
+  <style>
+    /* Fullscreen loader */
+    .loader-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .loader {
+      height: 80px;
+      aspect-ratio: 1;
+      padding: 10px;
+      border-radius: 50%;
+      box-sizing: border-box;
+      position: relative;
+      mask: conic-gradient(#000 0 0) content-box exclude, conic-gradient(#000 0 0);
+      filter: blur(8px);
+      background: radial-gradient(circle, #ff003c 40%, transparent 41%);
+      box-shadow: 0 0 20px #ff003c, 0 0 40px #ff003c, 0 0 60px #ff003c;
+    }
+
+    .loader:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-conic-gradient(#0000 0 5%, #ff003c, #0000 20% 50%);
+      animation: l2 1s linear infinite;
+    }
+
+    @keyframes l2 {
+      to {
+        rotate: 2turn;
+      }
+    }
+
+    body.hidden-content header,
+    body.hidden-content main {
+      display: none;
+    }
+
+    /* Username popup styles */
+    #username-popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      flex-direction: column;
+      color: white;
+    }
+
+    #username-popup input {
+      padding: 0.5em;
+      font-size: 1.2em;
+      border-radius: 4px;
+      border: none;
+      margin-top: 0.5em;
+      width: 250px;
+      text-align: center;
+    }
+
+    #username-popup button {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #ff003c;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    #username-popup button:hover {
+      background-color: #cc002f;
+    }
+
+    /* Style for join message */
+    .message.join {
+      font-style: italic;
+      color: #888;
+      margin: 10px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="hidden-content">
+
+  <!-- Username popup overlay -->
+  <div id="username-popup">
+    <h2>Please enter your username</h2>
+    <input id="username-input" type="text" placeholder="Your username" autocomplete="off" />
+    <button id="username-submit">Enter Chat</button>
+  </div>
+
+  <div class="loader-wrapper">
+    <div class="loader"></div>
+  </div>
+
+  <header>
+    <div class="nav-left">
+      <img src="catlogo.png" alt="Logo" class="logo" height="65" />
+      <div class="logo-title">
+        <h1>Prototype Chat</h1>
+        <h2 id="welcome-message">Welcome User: Anonymous</h2>
+      </div>
+    </div>
+    <button id="menu-toggle" aria-label="Toggle menu">≡</button>
+    <nav class="menu">
+      <ul>
+        <li id="signup-link"><a href="/auth/google">Sign up</a></li>
+        <li id="login-link"><a href="/auth/google">Login</a></li>
+        <li><a href="https://docs.google.com/document/d/1DzBqM41fLVMR0gGwXnTDwLvlZu7h4UQK_3g4Y5AWkTU/edit?usp=sharing">Help</a></li>
+        <li><a href="userslist.html">Users list</a></li>
+        <li><a href="adminpanel.html">Admin only</a></li>
+        <li><a href="#" id="exit-button">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="app-container">
+    <section class="chat-container hidden">
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="input-area">
+        <input type="text" id="message-input" placeholder="Type message" />
+        <button id="send-button">Send</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const popup = document.getElementById('username-popup');
+      const input = document.getElementById('username-input');
+      const submitBtn = document.getElementById('username-submit');
+
+      function saveUsername(name) {
+        name = name.trim();
+        if (!name) {
+          alert("Username cannot be empty");
+          return false;
+        }
+        localStorage.setItem('username', name);
+        return true;
+      }
+
+      if (localStorage.getItem('username')) {
+        popup.style.display = 'none';
+        startLoader(true);
+      } else {
+        popup.style.display = 'flex';
+
+        submitBtn.onclick = () => {
+          if (saveUsername(input.value)) {
+            popup.style.display = 'none';
+            startLoader(true);
+          }
+        };
+
+        input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            submitBtn.click();
+          }
+        });
+      }
+    });
+
+    function startLoader(showJoinMessage) {
+      setTimeout(() => {
+        document.body.classList.remove('hidden-content');
+        document.querySelector('.loader-wrapper').style.display = 'none';
+
+        const username = localStorage.getItem('username') || 'Anonymous';
+        document.getElementById('welcome-message').textContent = `Welcome User: ${username}`;
+
+        const signupLink = document.getElementById('signup-link');
+        const loginLink = document.getElementById('login-link');
+        const chatContainer = document.querySelector('.chat-container');
+        const chatMessages = document.getElementById('chat-messages');
+
+        signupLink.style.display = 'none';
+        loginLink.style.display = 'none';
+
+        chatContainer.classList.remove('hidden');
+
+        if (showJoinMessage) {
+          const joinMsg = document.createElement('div');
+          joinMsg.className = 'message join';
+          joinMsg.textContent = `${username} has joined the chat.`;
+          chatMessages.appendChild(joinMsg);
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        document.getElementById('exit-button').addEventListener('click', (e) => {
+          e.preventDefault();
+          localStorage.removeItem('username'); // Clear username on logout
+          window.location.href = '/';
+        });
+
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+          document.querySelector('.menu').classList.toggle('open');
+        });
+
+        const sendButton = document.getElementById('send-button');
+        const messageInput = document.getElementById('message-input');
+
+        function sendMessage() {
+          const text = messageInput.value.trim();
+          if (text === '') return;
+
+          const username = localStorage.getItem('username') || 'Anonymous';
+          const msg = document.createElement('div');
+          msg.className = 'message user';
+          msg.innerHTML = `<strong>${username}:</strong> ${text}`;
+          chatMessages.appendChild(msg);
+          messageInput.value = '';
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+
+      }, 2000); // Delay for loader in ms
+    }
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
