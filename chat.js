@@ -1,5 +1,4 @@
 const socket = io();
-const { Server } = require('socket.io');
 const username = localStorage.getItem('username') || 'Anonymous';
 
 const chatMessages = document.getElementById('chat-messages');
